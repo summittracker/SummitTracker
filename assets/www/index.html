@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1"> 
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta charset="UTF-8" />
+    <meta name="robots" content="NOODP" />
+    <meta name="description" content="Bucket List" />
+    <meta name="keywords" content="Mountain,Summit,Eric Taylor" />
+    <title>Summit Tracker</title>
+    <link rel="stylesheet" href="css/jquery.mobile-1.0.1.min.css" />
+    <link rel="stylesheet" href="css/global.css" />
+    <script type="text/javascript" charset="utf-8" src="js/cordova-1.5.0.js"></script>
+    <script src="js/jquery-1.6.4.min.js"></script>
+    <script src="js/jquery.mobile-1.0.1.min.js"></script>
+<body>
+
+<div data-role="page" id="main">
+
+    <div data-role="header">
+        <h1>Summit Tracker</h1>
+    </div>
+
+    <div data-role="content">
+        <div data-role="fieldcontain">
+            <ul data-role="listview" data-inset="true" data-filter="true" data-filter-placeholder="Search Summits..." id="summitlist">
+                <!-- dynamically added -->
+            </ul>
+        </div>
+    </div>
+ 
+    <div data-role="footer" data-position="fixed" class="ui-bar">
+        <div data-role="controlgroup" data-type="horizontal">
+            <select name="filter" id="filter" onChange="javascript:loadList(this.value);">
+              <option value="all">Filter: All</option>
+              <option value="asia">Filter: Asia</option>
+              <option value="africa">Filter: Africa</option>
+              <option value="antartica">Filter: Antartica</option>
+              <option value="australia">Filter: Australia</option>
+              <option value="europe">Filter: Europe</option>
+              <option value="namerica">Filter: North America</option>
+              <option value="samerica">Filter: South America</option>
+              <option value="summited">Filter: Summited</option>
+            </select>
+            <a href="#about" data-role="button">About This App</a>
+        </div>
+    </div>
+
+</div>
+
+<div data-role="page" id="details">
+
+    <div data-role="header">
+        <a href="#main" data-icon="arrow-l">Back</a>
+        <h1>Summit Tracker</h1>
+    </div>
+
+    <div data-role="content">
+        <ul data-role="listview" data-inset="true" id="dataList">
+            <!-- dynamically added -->
+        </ul>
+        <input type="checkbox" name="summited" id="summited" />
+        <label for="summited">Summited?</label>
+    </div>
+    
+    <div class="ui-grid-a">
+        <div class="ui-block-a"><a href="#map" data-role="button" id="map" data-transition="slide">Map</a></div>
+        <div class="ui-block-b"><a href="" data-role="button" id="more" target='_blank'>More</a></div>
+    </div>
+
+</div>
+
+<div data-role="page" id="map">
+
+    <script src="http://maps.googleapis.com/maps/api/js?key=AIzaSyC6ZW1123jMRpFjqIKWjup4zwVeKpxd8ww&sensor=false" type="text/javascript"></script>
+
+    <div data-role="header">
+        <a href="#details" data-icon="arrow-l">Back</a>
+        <a href="#main" data-icon="arrow-u">Home</a>
+        <h1>Summit Tracker</h1>
+    </div>
+    
+   <div data-role="content" id="map_content" style="padding:0; height:100%;"> 
+        <div id="map_canvas" style="height:1000px; overflow:hidden;"></div>
+    </div>
+
+</div>
+
+<div data-role="page" id="about">
+
+    <div data-role="header">
+        <a href="#main" data-icon="arrow-l">Back</a>
+        <h1>Summit Tracker</h1>
+    </div>
+
+    <div data-role="content">
+        <ul class="textblock">
+            <li class="first" style="text-align:center;"><b>About Summit Tracker</b></li>
+            <li class="">Summit Tracker is a free app created for people interested in climbing, hiking and mountaineering. This is not a complete list of mountain summits but rather a list of the top mountains in each continent as well as the top in many U.S. States. Primarily this is a quick reference list with links to more information.</li>
+            <li class="">This app is built with JQuery Mobile and PhoneGap. The author is looking for a JSON-based REST service that can provide greater depth and breadth of mountain data.</li>
+            <li class="last">Contact Summit Tracker at: <a href="mailto:summittrackerapp@gmail.com">summittrackerapp@gmail.com</a></li>
+        </ul>
+        <ul class="textblock">
+            <li class="first" style="text-align:center;"><b>Other Resources</b></li>
+            <li class=""><a href="http://summitpost.org/" target="_blank">SummitPost</a> - Collaborative Climbing Community</li>
+            <li class=""><a href="http://peakware.com" target='_blank'>Peakware</a> - World Mountain Encyclopedia</li>
+            <li class="last"><a href="http://www.14ers.com/" target="_blank">14ers</a> - Colorado's Fourteeners and High Peaks</li>
+        </ul>
+    </div>
+
+</div>
+
+<script>
+
+//constants
+var CURRENT_SUMMIT = "currentSummit";
+var CURRENT_FILTER = "currentFilter";
+var SEARCH_PREFIX = "http://en.wikipedia.org/w/index.php?search=";
+
+//variables
+var loaded = false;
+var summitData = {
+	//asia
+	everest: {name: "Mt. Everest",elevation: "29,034",country: "Nepal/Tibet",continent: "Asia",range: "Karakoram",ascent: "May 29, 1953",more: "http://en.wikipedia.org/wiki/Mount_Everest",latitude: 27.98712552356428,longitude: 86.8853759765625},
+	k2: {name: "K2",elevation: "28,251",country: "Nepal/Tibet",continent: "Asia",range: "Karakoram",ascent: "July 31, 1954",more: "http://en.wikipedia.org/wiki/K2",latitude: 35.881389,longitude: 76.513333},
+	kangchenjunga: {name:"Kangchenjunga",elevation:"28,169",range:"Kangchenjunga Himalaya",latitude:27.703333,longitude:88.14750,ascent:"1955",continent:"Asia",country:"India/Nepal"},
+	lhotse: {name:"Lhotse",elevation:"27,940",range:"Mahalangur Himalaya",latitude:27.961667,longitude:86.93305,ascent:"1956",continent:"Asia",country:"Tibet/Nepal"},
+	makalu: {name:"Makalu",elevation:"27,838",range:"Mahalangur Himalaya",latitude:27.889722,longitude:87.08889,ascent:"1955",continent:"Asia",country:"China/Nepal"},
+	chooyu: {name:"Cho Oyu",elevation:"26,864",range:"Mahalangur Himalaya",latitude:28.094167,longitude:86.66083,ascent:"1954",continent:"Asia",country:"China/Nepal"},
+	dhaulagirii: {name:"Dhaulagiri I",elevation:"26,795",range:"Dhaulagiri Himalaya",latitude:28.696667,longitude:83.49306,ascent:"1960",continent:"Asia",country:"Nepal"},
+	manaslu: {name:"Manaslu",elevation:"26,781",range:"Manaslu Himalaya",latitude:28.55,longitude:84.55972,ascent:"1956",continent:"Asia",country:"Nepal"},
+	nangaparbat: {name:"Nanga Parbat",elevation:"26,660",range:"Nanga Parbat Himalaya",latitude:35.237222,longitude:74.58917,ascent:"1953",continent:"Asia",country:"Pakistan"},
+	annapurnai: {name:"Annapurna I",elevation:"26,545",range:"Annapurna Himalaya",latitude:28.595556,longitude:83.82028,ascent:"1950",continent:"Asia",country:"Nepal"},	
+	//africa
+    kilimanjaro: {name:"Kilimanjaro",elevation:"19,341",range:"East Africa Mountains",latitude:-3.076475,longitude:37.353205,continent:"Africa",country:"Tanzania"},
+    mountkenya: {name:"Mount Kenya",elevation:"17,057",range:"East Africa Mountains",latitude:-0.151944,longitude:37.308333,continent:"Africa",country:"Kenya"},
+    mawensi: {name:"Mawensi",elevation:"16,893",range:"East Africa Mountains",latitude:-3.0925,longitude:37.455833,continent:"Africa",country:"Tanzania"},
+    mountstanley: {name:"Mount Stanley",elevation:"16,762",range:"East Africa Mountains",latitude:0.385556,longitude:29.8725,continent:"Africa",country:"DR Congo Uganda"},
+    mountspeke: {name:"Mount Speke",elevation:"16,043",range:"East Africa Mountains",latitude:0.398056,longitude:29.8925,continent:"Africa",country:"Uganda"},
+    mountbaker: {name:"Mount Baker",elevation:"15,892",range:"East Africa Mountains",latitude:0.361111,longitude:29.892778,continent:"Africa",country:"Uganda"},
+    mountemin: {name:"Mount Emin",elevation:"15,741",range:"East Africa Mountains",latitude:0.428333,longitude:29.9,continent:"Africa",country:"DR Congo"},
+    mountgessi: {name:"Mount Gessi",elevation:"15,469",range:"East Africa Mountains",latitude:0.421944,longitude:29.918333,continent:"Africa",country:"Uganda"},
+    mountluigidisavoia: {name:"Mount Luigi di Savoia",elevation:"15,180",range:"East Africa Mountains",latitude:0.33,longitude:29.887778,continent:"Africa",country:"Uganda"},
+    mountmeru: {name:"Mount Meru",elevation:"14,977",range:"East Africa Mountains",latitude:-3.244167,longitude:36.75,continent:"Africa",country:"Uganda"},
+	//antartica
+	vinsonmassif: {name:"Vinson Massif",elevation:"16,050",range:"Sentinel Range",latitude:-78.525483,longitude:-85.617147,continent:"Antartica",country:"N/A",ascent:"1966"},
+	tyree: {name:"Mount Tyree",elevation:"15,919",range:"Sentinel Range",latitude:-78.4,longitude:-85.916667,continent:"Antartica",country:"N/A",ascent:"1967"},	
+    //australia
+	kosciuszko: {name:"Kosciuszko",elevation:"7,310",range:"Great Dividing Range",latitude:-36.455981,longitude:148.263333,country:"Australia",continent:"Australia",ascent:"1840"},
+	carstenszpyramid: {name:"Carstensz Pyramid",elevation:"16,024",range:"Maoke Mountains",latitude:-4.078889,longitude:137.158333,country:"Indonesia",continent:"Australia",ascent:"1962"},
+	//europe
+	elbrus: {name:"Elbrus",elevation:"18,510",range:"Caucasus",latitude:43.355,longitude:42.439167,country:"Russia",continent:"Europe",ascent:"1874"},
+	dykhtau: {name:"Dykh-Tau",elevation:"17,076",range:"Caucasus",latitude:43.05,longitude:43.133333,country:"Russia",continent:"Europe"},
+	kazbek: {name:"Mount Kazbek",elevation:"16,512",range:"Khokh Range",latitude:42.6975,longitude:44.518889,country:"Georgia",continent:"Europe"},
+	rustaveli: {name:"Shota Rustaveli Peak",elevation:"15,940",range:"Caucasus",latitude:43.02592,longitude:43.04349,country:"Georgia",continent:"Europe"},		
+	montblanc: {name:"Mont Blanc",elevation:"15,782",range:"Alps",latitude:45.833611,longitude:6.865,country:"France/Italy",continent:"Europe",ascent:"1786"},
+	klyuchevskaya: {name:"Klyuchevskaya Sopka",elevation:"15,584",latitude:56.056044,longitude:160.644089,country:"Russia",continent:"Europe",ascent:"1788"},
+	ushba: {name:"Ushba",elevation:"15,387",range:"Caucasus",latitude:43.12486,longitude:42.65901,country:"Georgia",continent:"Europe",ascent:"1903"},
+	monterosa: {name:"Monte Rosa",elevation:"15,203",range:"Alps",latitude:45.936833,longitude:7.867056,country:"Switzerland ",continent:"Europe",ascent:"1855"},
+	dom: {name:"Dom",elevation:"15,203",range:"Pennine Alps",latitude:46.095,longitude:7.86,country:"Switzerland ",continent:"Europe",ascent:"1858"},
+	matterhorn: {name:"Matterhorn",elevation:"14,690",range:"Pennine Alps",latitude:45.976389,longitude:7.658333,country:"Switzerland/Italy ",continent:"Europe",ascent:"1865"},	
+	//south america
+	aconcagua: {name: "Aconcagua",elevation: "22,841",country: "Argentina",continent: "South America",more: "http://en.wikipedia.org/wiki/Aconcagua",latitude: -32.653431,longitude: -70.011083},
+	ojosdelsalado: {name: "Ojos del Salado",elevation: "22,614",country: "Argentina/Chile",continent: "South America",latitude:-27.109611,longitude:-68.54225,ascent:"1937"},
+	tupungato: {name:"Tupungato",elevation:"21,555",range:"Andes",latitude:-33.354444,longitude:-69.768611,country:"Argentina",continent:"South America"},
+	pissis: {name:"Pissis",elevation:"22,287",range:"Andes",latitude:-27.754627,longitude:-68.798854,country:"Argentina",continent:"South America"},
+	huascaran: {name:"Huascaran",elevation:"22,205",range:"Cordillera Blanca",latitude:-9.121389,longitude:-77.608889,country:"Peru",continent:"South America"},
+	cerrobonete: {name:"Cerro Bonete",elevation:"22,175",range:"Andes",latitude:-28.0186,longitude:-68.756,country:"Argentina",continent:"South America"},
+	llullallaco: {name:"Llullallaco",elevation:"22,110",range:"Andes",latitude:-24.719863,longitude:-68.536852,country:"Argentina/Chile",continent:"South America"},
+	mercedario: {name:"Cerro Mercedario",elevation:"22,109",range:"Andes",latitude:-31.979167,longitude:-70.1125,country:"Argentina",continent:"South America"},
+	ellibertador: {name:"El Libertador",elevation:"22,047",range:"Andes",latitude:-24.967,longitude:-66.367,country:"Argentina",continent:"South America"},	
+	//north america
+	mckinley: {name:"Mount McKinley",elevation: "20,320",country: "United States",continent: "North America",range: "Alaska Range",ascent: "June 7, 1913",more: "http://en.wikipedia.org/wiki/Mount_McKinley",latitude: 63.0695,longitude: -151.0074},
+	mountwhitney: {name:"Mount Whitney",elevation:"14,495",country: "United States",continent: "North America",state:"California",range:"Sierra Nevada",latitude:36.57855,longitude: -118.29239},
+	mountelbert: {name:"Mount Elbert",elevation:"14,433",country: "United States",continent: "North America",state:"Colorado",range:"Southern Rocky Mountains",latitude:39.117732,longitude: -106.445203},
+	mountrainier: {name:"Mount Rainier",elevation:"14,411",country: "United States",continent: "North America",state:"Washington",range:"Cascade Range",latitude:46.852947,longitude: -121.760424},
+	gannettpeak: {name:"Gannett Peak",elevation:"13,804",country: "United States",continent: "North America",state:"Wyoming",range:"Greater Yellowstone Rockies",latitude:43.1844,longitude: -109.654292},
+	maunakea: {name:"Mauna Kea",elevation:"13,796",country: "United States",continent: "North America",state:"Hawaii",range:"Hawaii",latitude:19.820679,longitude: -155.468024},
+	kingspeak: {name:"Kings Peak",elevation:"13,528",country: "United States",continent: "North America",state:"Utah",range:"Western Rocky Mountains",latitude:40.776327,longitude: -110.372933},
+	wheelerpeak: {name:"Wheeler Peak",elevation:"13,161",country: "United States",continent: "North America",state:"New Mexico",range:"Southern Rocky Mountains",latitude:36.556784,longitude: -105.416907},
+	boundarypeak: {name:"Boundary Peak",elevation:"13,140",country: "United States",continent: "North America",state:"Nevada",range:"Great Basin Ranges",latitude:37.84609,longitude: -118.35135},
+	granitepeak: {name:"Granite Peak",elevation:"12,799",country: "United States",continent: "North America",state:"Montana",range:"Greater Yellowstone Rockies",latitude:45.163453,longitude: -109.807609},
+	borahpeak: {name:"Borah Peak",elevation:"12,662",country: "United States",continent: "North America",state:"Idaho",range:"Idaho-Bitterroot Rocky Mountains",latitude:44.137376,longitude: -113.781122},
+	humphreyspeak: {name:"Humphreys Peak",elevation:"12,633",country: "United States",continent: "North America",state:"Arizona",range:"Colorado Plateau",latitude:35.346426,longitude: -111.677977},
+	mounthood: {name:"Mount Hood",elevation:"11,239",country: "United States",continent: "North America",state:"Oregon",range:"Cascade Range",latitude:45.373496,longitude: -121.695966},
+	guadalupepeak: {name:"Guadalupe Peak",elevation:"8749",country: "United States",continent: "North America",state:"Texas",range:"Southwest Basins and Ranges",latitude:31.891483,longitude: -104.860727},
+	harneypeak: {name:"Harney Peak",elevation:"7242",country: "United States",continent: "North America",state:"South Dakota",range:"Great Plains",latitude:43.865973,longitude: -103.531188},
+	mountmitchell: {name:"Mount Mitchell",elevation:"6684",country: "United States",continent: "North America",state:"North Carolina",range:"Blue Ridge Mountains",latitude:35.76497,longitude: -82.265152},
+	clingmansdome: {name:"Clingmans Dome",elevation:"6643",country: "United States",continent: "North America",state:"Tennessee",range:"Blue Ridge Mountains",latitude:35.562919,longitude: -83.498601},
+	mountwashington: {name:"Mount Washington",elevation:"6288",country: "United States",continent: "North America",state:"New Hampshire",range:"Northern U.S. Appalachians",latitude:44.270464,longitude: -71.303444},
+	mountrogers: {name:"Mount Rogers",elevation:"5729",country: "United States",continent: "North America",state:"Virginia",range:"Blue Ridge Mountains",latitude:36.660052,longitude: -81.5449},
+	panoramapoint: {name:"Panorama Point",elevation:"5426",country: "United States",continent: "North America",state:"Nebraska",range:"Great Plains",latitude:41.007235,longitude: -104.031264},
+	mountmarcy: {name:"Mount Marcy",elevation:"5344",country: "United States",continent: "North America",state:"New York",range:"Canadian Shield",latitude:44.112857,longitude: -73.923784},
+	katahdin: {name:"Katahdin",elevation:"5268",country: "United States",continent: "North America",state:"Maine",range:"Northern U.S. Appalachians",latitude:45.904362,longitude: -68.921392},
+	blackmesa: {name:"Black Mesa",elevation:"4973",country: "United States",continent: "North America",state:"Oklahoma",range:"Great Plains",latitude:36.931838,longitude: -102.997859},
+	spruceknob: {name:"Spruce Knob",elevation:"4861",country: "United States",continent: "North America",state:"West Virginia",range:"Appalachian Plateaus",latitude:38.699756,longitude: -79.532993},
+	brasstownbald: {name:"Brasstown Bald",elevation:"4784",country: "United States",continent: "North America",state:"Georgia",range:"Blue Ridge Mountains",latitude:34.874361,longitude: -83.811077},
+	mountmansfield: {name:"Mount Mansfield",elevation:"4393",country: "United States",continent: "North America",state:"Vermont",range:"Northern U.S. Appalachians",latitude:44.543822,longitude: -72.814366},
+	blackmountain: {name:"Black Mountain",elevation:"4139",country: "United States",continent: "North America",state:"Kentucky",range:"Appalachian Plateaus",latitude:36.914158,longitude: -82.893831},
+	mountsunflower: {name:"Mount Sunflower",elevation:"4039",country: "United States",continent: "North America",state:"Kansas",range:"Great Plains",latitude:39.021982,longitude: -102.037141},
+	sassafrasmountain: {name:"Sassafras Mountain",elevation:"3554",country: "United States",continent: "North America",state:"South Carolina",range:"Blue Ridge Mountains",latitude:35.065146,longitude: -82.777349},
+	whitebutte: {name:"White Butte",elevation:"3506",country: "United States",continent: "North America",state:"North Dakota",range:"Great Plains",latitude:46.386965,longitude: -103.302694},
+	mountgreylock: {name:"Mount Greylock",elevation:"3488",country: "United States",continent: "North America",state:"Massachusetts",range:"Northern U.S. Appalachians",latitude:42.63726,longitude: -73.165916},
+	backbonemountain: {name:"Backbone Mountain",elevation:"3360",country: "United States",continent: "North America",state:"Maryland",range:"Appalachian Plateaus",latitude:39.237398,longitude: -79.485528},
+	mountdavis: {name:"Mount Davis",elevation:"3213",country: "United States",continent: "North America",state:"Pennsylvania",range:"Appalachian Plateaus",latitude:39.786009,longitude: -79.176802}
+};
+var metaData = {
+	name: "Name",
+	elevation: "Elevation",
+	country: "Country",
+	state: "State",
+	continent: "Continent",
+	range: "Range",
+	ascent: "First Ascent",
+}
+
+//Listen for any attempts to call changePage().
+$( '#main' ).live( 'pagebeforeshow',function(event, ui){
+	//build the initial list	
+	if ( loaded == false ) {
+		//apply previously stored filter (if any)
+		filter = localStorage.getItem(CURRENT_FILTER);
+		if( filter != null ) {
+			$( '#filter' ).val(filter);
+			$( '#filter' ).selectmenu("refresh");
+		}
+		//load the list
+		loadList(filter);
+    	loaded = true;
+	}
+	refreshMarks();
+});	
+
+//load the main list
+function loadList(filter) {
+	$( "#summitlist" ).empty();
+	var summitList = $( "#summitlist" ).listview();
+	var lastContinent = "";
+	$.each( summitData, function(key, summitObj){
+		if (include(key, summitObj, filter)==true) {
+	   		if (summitObj.continent != lastContinent) {
+	   			summitList.append("<li data-role='list-divider'>"+summitObj.continent+"</li>");
+	   		}
+			lastContinent = summitObj.continent;
+			summitList.append("<li data-filtertext='"+summitObj.continent+" "+summitObj.name+" "+summitObj.state+"'>"
+	    		+"<a href='javascript:changePage(\""+key+"\");'>"+summitObj.name
+	    		+"<span id='list_"+key+"'></span>"+"</a></li>");
+		}
+	});
+	$('#summitlist').listview('refresh');
+	refreshMarks();
+	//save last filer for next app load
+	localStorage.setItem(CURRENT_FILTER, filter);
+}
+
+//apply filter rules
+function include(key, summitObj, filter) {
+	if (filter==null) { return true; }
+	if (filter=='all') { return true; }
+	if (filter=='namerica') { if (summitObj.continent == "North America") { return true; } }
+	if (filter=='europe') { if (summitObj.continent == "Europe") { return true; } }
+	if (filter=='africa') { if (summitObj.continent == "Africa") { return true; } }
+	if (filter=='antartica') { if (summitObj.continent == "Antartica") { return true; } }
+	if (filter=='samerica') { if (summitObj.continent == "South America") { return true; } }
+	if (filter=='australia') { if (summitObj.continent == "Australia") { return true; } }
+	if (filter=='asia') { if (summitObj.continent == "Asia") { return true; } }
+	if (filter=='summited') { if (localStorage.getItem(key) == 'true') { return true; } }
+	return false;
+}
+
+function refreshMarks() {
+	//each time, refresh the checkmarks
+	$.each( summitData, function(key, summitObj){
+		val = localStorage.getItem(key);
+		var checkmarkText = '';
+		if( val == 'true' ) {
+			checkmarkText = ' ✔';
+		}
+		$( "#list_"+key ).text(checkmarkText);
+	});
+}
+
+//handle click events on the main page
+function changePage(key) {
+	setCurrentSummit(key);
+	$.mobile.changePage( "#details", { transition: "slide"} );
+}
+
+//details page
+$( '#details' ).live( 'pagebeforeshow',function(event, ui){
+	//cannot reload page here, go back to the main page
+	if (getCurrentSummit() == null) {
+		$.mobile.changePage( "#main", { transition: "slide"} );
+		return;
+	}
+    
+	//get the data for the given key
+	var summitObj = summitData[getCurrentSummit()];
+	//update the fields
+	$('#dataList').listview().html('<li data-role="list-divider" role="heading">Summit Information</li>');
+	$.each( summitObj, function(key, val){
+		var title = metaData[key];
+		if (title != null) {
+			$('#dataList').append('<li><label>'+metaData[key]+':&nbsp;</label><span id="name">'+val+'</span></li>');
+		}
+	});
+	$('#dataList').listview('refresh');
+	//update the more button
+	var moreLink = summitObj['more'];
+	if (summitObj['more']==null) {
+		moreLink = SEARCH_PREFIX + summitObj['name'];
+	}
+	$('#more').attr('href', moreLink);
+	//update the checkbox
+	var val = localStorage.getItem(getCurrentSummit());
+    $('input[name="summited"]').prop('checked', (val == 'true')).checkboxradio("refresh");
+
+});
+
+//map page
+$( '#map' ).live( 'pageshow',function(event, ui){
+	var summitObj = summitData[getCurrentSummit()];
+	//create map
+	try {
+    	var myOptions = {
+          center: new google.maps.LatLng(summitObj.latitude, summitObj.longitude),
+          zoom: 14,
+          mapTypeId: google.maps.MapTypeId.HYBRID
+        };
+    	var map = new google.maps.Map(document.getElementById("map_canvas"),
+            myOptions);
+    	$("#map_canvas").height('height: min-height: 100%;');
+	}
+	catch(e) {
+		$("#map_canvas").html("<div data-role='fieldcontain'>Map Unavailable</div>");
+	}
+});
+
+//cleanup map when navigate away
+$( '#map' ).live( 'pagehide',function(event, ui){
+	$("#map_canvas").html('');
+});
+
+//when the checkmark is clicked, save it to local storage
+$( 'input' ).change(function(event) {
+    localStorage.setItem(getCurrentSummit(), event.target.checked);
+});
+
+//retrieve current summit between pages
+function getCurrentSummit() {
+	return localStorage.getItem(CURRENT_SUMMIT);
+}
+
+//save current summit between pages
+function setCurrentSummit(value) {
+	localStorage.setItem(CURRENT_SUMMIT, value);
+}
+
+</script>
+</body>
+</html>
